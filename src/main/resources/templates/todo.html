@@ -5,10 +5,12 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <style>
-        .completed__todo {
+        .completed__todo .form-control{
             text-decoration: line-through;
         }
     </style>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://www.jsviews.com/download/jsrender.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -25,19 +27,21 @@
         <h2>할일</h2>
         <ul id="todoList" class="list-group"></ul>
     </div>
-    <template id="todoTemplate">
-        <li class="input-group">
+    <script id="todoTemplate" type="text/x-jsrender">
+        <li class="input-group" data-id="{{:todoId}}">
             <div class="input-group-prepend">
                 <button class="btn btn-outline-warning complete" type="button">완료</button>
             </div>
-            <span type="text" class="form-control"></span>
+            <span type="text" class="form-control">{{:contents}}</span>
             <div class="input-group-append">
-                <button class="btn btn-outline-secondary" type="button">수정</button>
+                <button class="btn btn-danger remove__todo" type="button">삭제</button>
             </div>
         </li>
-    </template>
+    </script>
 
     <script type="text/javascript">
+
+        // 데이터 관리
         const UserTodoList = [];
         const UserTodoItem = function (title) {
             this.id = new Date().getTime();
@@ -45,62 +49,64 @@
             this.isCompleted = false;
         };
 
-        const formNewTodo = document.querySelector('#formNewTodo');
-        const newTodoTitle = formNewTodo.querySelector('input');
-        const submitNewTodo = formNewTodo.querySelector('button');
+        // UI Controller
+        const $formNewTodo = $('#formNewTodo');
+        const $formInput = $formNewTodo.find('input');
+        const $todoList = $('#todoList');
 
-        const todoList = document.querySelector('#todoList');
-        const originalTodoTemplate = document.querySelector('#todoTemplate').content.querySelector('li');
+        $formNewTodo.on('click', '.btn', () =>{
+            const contents = $formInput.val();
+            const newTodoItem = new UserTodoItem(contents);
+            UserTodoList.push(newTodoItem);
 
-        // 할일 입력 시 이벤트 바인딩
-        submitNewTodo.addEventListener('click', () =>{
-                const contents = newTodoTitle.value;
+            const $todoTemplate = $.templates('#todoTemplate');
+            const renderData = {
+                todoId : newTodoItem.id.toString(),
+                contents : contents
+            };
+            const todoListItem = $todoTemplate.render(renderData);
+            $todoList.append(todoListItem);
 
-                const newTodoItem = new UserTodoItem(contents);
-                UserTodoList.push(newTodoItem);
-
-                const todoTemplate = document.importNode(originalTodoTemplate, true);
-                todoTemplate.setAttribute('data-id', newTodoItem.id.toString());
-                todoTemplate.querySelector('.form-control').innerText = contents;
-                todoList.appendChild(todoTemplate);
-
-                newTodoTitle.value = '';
+            $formInput.val('');
         });
 
-        // 완료 클릭시 이벤트 바인딩
-        todoList.addEventListener('click', (event) => {
-            const currentTarget = event.target;
-            const isNotCompleteElement = !currentTarget.classList.contains('complete');
-            if(isNotCompleteElement) {
-                return false;
-            }
-            const currentTodoItem = currentTarget.parentNode.parentNode;
-            const currentTodoText = currentTodoItem.querySelector('.form-control');
-            const currentTodoItemId =  currentTodoItem.getAttribute('data-id');
+        $todoList.on('click', '.complete', (event) => {
+            const $buttonComplete = $(event.currentTarget);
+            const $currentTodoItem = $buttonComplete.closest('li');
+            const currentTodoId = $currentTodoItem.data('id');
+            const [currentUserTodoItem] = UserTodoList.filter( (userTodoItem) => currentTodoId.toString() === userTodoItem.id.toString() );
 
-            const currentUserTodoItem = UserTodoList.filter((userTodoItem) => {
-                const isCurrentItem = userTodoItem.id.toString() === currentTodoItemId;
-                if(isCurrentItem) {
-                    userTodoItem.isCompleted = !(userTodoItem.isCompleted);
-                }
-                return isCurrentItem;
-            })[0];
-
-            if(currentUserTodoItem) {
-                currentTarget.innerText = '해제';
-                currentTarget.classList.remove('btn-outline-warning');
-                currentTarget.classList.add('btn-outline-danger');
-                currentTodoText.classList.add('completed__todo');
+            currentUserTodoItem.isCompleted = !currentUserTodoItem.isCompleted;
+            if(currentUserTodoItem.isCompleted) {
+                $buttonComplete.html('해제');
+                $buttonComplete.removeClass('btn-outline-warning');
+                $buttonComplete.addClass('btn-outline-danger');
+                $currentTodoItem.addClass('completed__todo');
             } else {
-                currentTarget.innerText = '완료';
-                currentTarget.classList.add('btn-outline-warning');
-                currentTarget.classList.remove('btn-outline-danger');
-                currentTodoText.classList.remove('completed__todo');
+                $buttonComplete.html('완료');
+                $buttonComplete.addClass('btn-outline-warning');
+                $buttonComplete.removeClass('btn-outline-danger');
+                $currentTodoItem.removeClass('completed__todo');
             }
+            console.log(currentUserTodoItem);
+        });
 
+        $todoList.on('click', '.remove__todo', (event) => {
+            const $buttonComplete = $(event.currentTarget);
+            const $currentTodoItem = $buttonComplete.closest('li');
+            const currentTodoId = $currentTodoItem.data('id');
 
+            UserTodoList.forEach(
+                (userTodoItem, index) => {
+                    if(currentTodoId.toString() === userTodoItem.id.toString()) {
+                        UserTodoList.splice(index, 1);
+                    }
+                }
+            );
 
-        })
+            $currentTodoItem.remove();
+            console.log(UserTodoList);
+        });
 
     </script>
 </body>

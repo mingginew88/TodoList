@@ -1,0 +1,104 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Getting Started: Serving Web Content</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <style>
+        .completed__todo {
+            text-decoration: line-through;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>TODO LIST</h1>
+    <h2>할일 추가</h2>
+    <div id="formNewTodo" class="input-group mb-3">
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" aria-label="todo">
+            <div class="input-group-append">
+                <button class="btn btn-outline-success" type="button">입력</button>
+            </div>
+        </div>
+    </div>
+    <h2>할일</h2>
+    <ul id="todoList" class="list-group"></ul>
+</div>
+<template id="todoTemplate">
+    <li class="input-group">
+        <div class="input-group-prepend">
+            <button class="btn btn-outline-warning complete" type="button">완료</button>
+        </div>
+        <span type="text" class="form-control"></span>
+        <div class="input-group-append">
+            <button class="btn btn-outline-secondary" type="button">수정</button>
+        </div>
+    </li>
+</template>
+
+<script type="text/javascript">
+    const UserTodoList = [];
+    const UserTodoItem = function (title) {
+        this.id = new Date().getTime();
+        this.title = title || '';
+        this.isCompleted = false;
+    };
+
+    const formNewTodo = document.querySelector('#formNewTodo');
+    const newTodoTitle = formNewTodo.querySelector('input');
+    const submitNewTodo = formNewTodo.querySelector('button');
+
+    const todoList = document.querySelector('#todoList');
+    const originalTodoTemplate = document.querySelector('#todoTemplate').content.querySelector('li');
+
+    // 할일 입력 시 이벤트 바인딩
+    submitNewTodo.addEventListener('click', () =>{
+        const contents = newTodoTitle.value;
+
+        const newTodoItem = new UserTodoItem(contents);
+        UserTodoList.push(newTodoItem);
+
+        const todoTemplate = document.importNode(originalTodoTemplate, true);
+        todoTemplate.setAttribute('data-id', newTodoItem.id.toString());
+        todoTemplate.querySelector('.form-control').innerText = contents;
+        todoList.appendChild(todoTemplate);
+
+        newTodoTitle.value = '';
+    });
+
+    // 완료 클릭시 이벤트 바인딩
+    todoList.addEventListener('click', (event) => {
+        const currentTarget = event.target;
+        const isNotCompleteElement = !currentTarget.classList.contains('complete');
+        if(isNotCompleteElement) {
+            return false;
+        }
+        const currentTodoItem = currentTarget.parentNode.parentNode;
+        const currentTodoText = currentTodoItem.querySelector('.form-control');
+        const currentTodoItemId =  currentTodoItem.getAttribute('data-id');
+
+        const currentUserTodoItem = UserTodoList.filter((userTodoItem) => {
+            const isCurrentItem = userTodoItem.id.toString() === currentTodoItemId;
+            if(isCurrentItem) {
+                userTodoItem.isCompleted = !(userTodoItem.isCompleted);
+            }
+            return isCurrentItem;
+        })[0];
+
+        if(currentUserTodoItem) {
+            currentTarget.innerText = '해제';
+            currentTarget.classList.remove('btn-outline-warning');
+            currentTarget.classList.add('btn-outline-danger');
+            currentTodoText.classList.add('completed__todo');
+        } else {
+            currentTarget.innerText = '완료';
+            currentTarget.classList.add('btn-outline-warning');
+            currentTarget.classList.remove('btn-outline-danger');
+            currentTodoText.classList.remove('completed__todo');
+        }
+    })
+</script>
+</body>
+</html>
